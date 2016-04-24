@@ -1,0 +1,168 @@
+<html>
+    <head>
+        <title>Minesweeper</title>
+        <style>
+            body {
+                margin: 0;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas id="c" width="400" height="400"></canvas>
+        <p>Xiaohang James Miao (<a href="mailto:xmiao2@ncsu.edu">xmiao2@ncsu.edu</a>)</p>
+        <div>
+            Difficulty:
+            <select id="diff">
+                <option>Easy</option>
+                <option>Intermediate</option>
+                <option>Hard</option>
+                <option>Expert</option>
+            </select>
+        </div>
+        <script>
+        var c = document.getElementById("c");
+        var ctx = c.getContext("2d");
+        var i = 0;
+        var w = h = 400;
+        var r = c = 10;
+        var bh, bw;
+        var mine = 10;
+        var mines;
+
+        var start = function() {
+            bh = h/r;
+            bw = w/c;
+            mines = [];
+            for(var i=0; i<r; i++) {
+                mines[i] = [];
+                for(var j=0; j<c; j++) {
+                    mines[i][j] = new Object();
+                    mines[i][j].row = i;
+                    mines[i][j].col = j;
+                    mines[i][j].isCovered = true;
+                    mines[i][j].hasBomb = false;
+                    mines[i][j].isFlagged = false;
+                }
+            }
+            for(var i=0; i<mine; i++) {
+                var row, col;
+                do {
+                    row = Math.floor(Math.random() * r);
+                    col = Math.floor(Math.random() * c);
+                } while(mines[row][col].hasBomb);
+                mines[row][col].hasBomb = true;
+            }
+            for(var i=0; i<r; i++) {
+                for(var j=0; j<c; j++) {
+                    mines[i][j].nearBy = getNearBy(i,j);
+                }
+            }
+            drawGrid();
+        }
+
+        var getNearBy = function(row, col) {
+            var count = 0;
+            for(var i=row-1; i<=row+1; i++) {
+                if(i<0 || i>=r) continue;
+                for(var j=col-1; j<=col+1; j++) {
+                    if(j<0 || j>=c) continue;
+                    if(mines[i][j].hasBomb) count++;
+                }
+            }
+            return count;
+        }
+
+        var drawGrid = function() {
+            for(var i=0; i<r; i++) {
+                for(var j=0; j<c; j++) {
+                    ctx.fillStyle = "black";
+                    ctx.rect(i*bh,j*bw,bh,bw);
+                    if(mines[i][j].isCovered) {
+                        ctx.fillStyle = "lightgrey";
+                        ctx.fillRect(i*bh,j*bw,bh,bw);
+                        if(mines[i][j].isFlagged) {
+                            ctx.fillStyle = "red";
+                            ctx.fillText("F", i*bh+bh/2, j*bw+bw/2);
+                        }
+                    } else {
+                        if(mines[i][j].hasBomb) {
+                            ctx.fillStyle = "red";
+                        } else {
+                            ctx.fillStyle = "white";
+                        }
+                        ctx.fillRect(i*(h/r),j*(w/c),h/r,w/c);
+                        ctx.fillStyle = "black";
+                        ctx.fillText(mines[i][j].hasBomb ? "*" : mines[i][j].nearBy, i*bh+bh/2, j*bw+bw/2);
+                    }
+                }
+            }
+            ctx.stroke();
+        };
+
+        var getSelectedBlock = function(event) {
+            var x = Math.floor(event.clientX / (w/c));
+            var y = Math.floor(event.clientY / (h/r));
+            return mines[x][y];
+        };
+
+        var uncover = function(block) {
+            if(!block.isCovered) {
+                return false;
+            }
+            block.isCovered = false;
+            if(block.nearBy == 0) {
+                for(var i=block.row-1; i<=block.row+1; i++) {
+                    if(i<0 || i>=r) continue;
+                    for(var j=block.col-1; j<=block.col+1; j++) {
+                        if(j<0 || j>=c) continue;
+                        uncover(mines[i][j]);
+                    }
+                }
+            }
+        };
+
+        var isEnd = function() {
+            for(var i=0; i<r; i++) {
+                for(var j=0; j<c; j++) {
+                    if(mines[i][j].isCovered && !mines[i][j].hasBomb) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        };
+
+        var checkEnd = function() {
+            if(isEnd()) {
+                alert("You win! Click OK to play again.");
+                start();
+            }
+        };
+
+        document.getElementById("c").addEventListener("click", function(e) {
+            var block = getSelectedBlock(e);
+            uncover(block);
+            drawGrid();
+            if(block.hasBomb) {
+                alert("Rest in pieces!");
+                start();
+            }
+            checkEnd();
+        });
+
+        document.getElementById("c").addEventListener("contextmenu", function(e) {
+            e.preventDefault();
+            var block = getSelectedBlock(e);
+            block.isFlagged = !block.isFlagged;
+            drawGrid();
+        });
+
+        document.getElementById("diff").addEventListener("change", function(e) {
+            alert("This feature is coming soon.. probably not");
+        });
+
+        start();
+
+        </script>
+    </body>
+</html>
